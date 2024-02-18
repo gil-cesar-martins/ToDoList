@@ -34,6 +34,8 @@ class _CompNovaTarefaWidgetState extends State<CompNovaTarefaWidget> {
 
     _model.textFieldTarefaController ??= TextEditingController();
     _model.textFieldTarefaFocusNode ??= FocusNode();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
   }
 
   @override
