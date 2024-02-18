@@ -7,7 +7,12 @@ import 'comp_nova_tarefa_model.dart';
 export 'comp_nova_tarefa_model.dart';
 
 class CompNovaTarefaWidget extends StatefulWidget {
-  const CompNovaTarefaWidget({super.key});
+  const CompNovaTarefaWidget({
+    super.key,
+    required this.paramData,
+  });
+
+  final DateTime? paramData;
 
   @override
   State<CompNovaTarefaWidget> createState() => _CompNovaTarefaWidgetState();
@@ -118,7 +123,7 @@ class _CompNovaTarefaWidgetState extends State<CompNovaTarefaWidget> {
               onPressed: () async {
                 await TarefasTable().insert({
                   'titulo': _model.textFieldTarefaController.text,
-                  'data': supaSerialize<DateTime>(getCurrentTimestamp),
+                  'data': supaSerialize<DateTime>(widget.paramData),
                 });
                 Navigator.pop(context);
               },

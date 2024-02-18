@@ -1,10 +1,13 @@
+import '/backend/supabase/supabase.dart';
 import '/components/comp_nova_tarefa_widget.dart';
 import '/flutter_flow/flutter_flow_calendar.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'home_page_model.dart';
 export 'home_page_model.dart';
 
@@ -64,9 +67,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                   weekFormat: true,
                   weekStartsMonday: false,
                   rowHeight: 64.0,
-                  onChange: (DateTimeRange? newSelectedDate) {
-                    setState(
-                        () => _model.calendarSelectedDay = newSelectedDate);
+                  onChange: (DateTimeRange? newSelectedDate) async {
+                    if (_model.calendarSelectedDay == newSelectedDate) {
+                      return;
+                    }
+                    _model.calendarSelectedDay = newSelectedDate;
+                    setState(() => _model.requestCompleter = null);
+                    await _model.waitForRequestCompleted();
+                    setState(() {});
                   },
                   titleStyle: FlutterFlowTheme.of(context)
                       .headlineSmall
@@ -125,11 +133,161 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                   ),
                         ),
                         Expanded(
-                          child: ListView(
-                            padding: EdgeInsets.zero,
-                            shrinkWrap: true,
-                            scrollDirection: Axis.vertical,
-                            children: const [],
+                          child: FutureBuilder<List<TarefasRow>>(
+                            future: (_model.requestCompleter ??=
+                                    Completer<List<TarefasRow>>()
+                                      ..complete(TarefasTable().queryRows(
+                                        queryFn: (q) => q
+                                            .eq(
+                                              'data',
+                                              supaSerialize<DateTime>(_model
+                                                  .calendarSelectedDay?.start),
+                                            )
+                                            .order('status', ascending: true),
+                                      )))
+                                .future,
+                            builder: (context, snapshot) {
+                              // Customize what your widget looks like when it's loading.
+                              if (!snapshot.hasData) {
+                                return Center(
+                                  child: SizedBox(
+                                    width: 50.0,
+                                    height: 50.0,
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        FlutterFlowTheme.of(context).primary,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                              List<TarefasRow> listViewTarefasRowList =
+                                  snapshot.data!;
+                              return ListView.separated(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                scrollDirection: Axis.vertical,
+                                itemCount: listViewTarefasRowList.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 4.0),
+                                itemBuilder: (context, listViewIndex) {
+                                  final listViewTarefasRow =
+                                      listViewTarefasRowList[listViewIndex];
+                                  return Container(
+                                    width: 100.0,
+                                    height: 60.0,
+                                    decoration: BoxDecoration(
+                                      color: FlutterFlowTheme.of(context)
+                                          .alternate,
+                                      borderRadius: BorderRadius.circular(8.0),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsetsDirectional.fromSTEB(
+                                          8.0, 0.0, 8.0, 0.0),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.max,
+                                        children: [
+                                          InkWell(
+                                            splashColor: Colors.transparent,
+                                            focusColor: Colors.transparent,
+                                            hoverColor: Colors.transparent,
+                                            highlightColor: Colors.transparent,
+                                            onTap: () async {
+                                              await TarefasTable().update(
+                                                data: {
+                                                  'status': !listViewTarefasRow
+                                                      .status!,
+                                                },
+                                                matchingRows: (rows) => rows.eq(
+                                                  'id',
+                                                  listViewTarefasRow.id,
+                                                ),
+                                              );
+                                              setState(() => _model
+                                                  .requestCompleter = null);
+                                              await _model
+                                                  .waitForRequestCompleted();
+                                            },
+                                            child: Container(
+                                              height: 100.0,
+                                              decoration: const BoxDecoration(),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.max,
+                                                children: [
+                                                  if (listViewTarefasRow
+                                                          .status ==
+                                                      true)
+                                                    Icon(
+                                                      Icons.check_box,
+                                                      color:
+                                                          FlutterFlowTheme.of(
+                                                                  context)
+                                                              .roxo,
+                                                      size: 24.0,
+                                                    ),
+                                                  if (listViewTarefasRow
+                                                          .status ==
+                                                      false)
+                                                    Icon(
+                                                      Icons
+                                                          .check_box_outline_blank,
+                                                      color:
+                                                          FlutterFlowTheme.of(
+                                                                  context)
+                                                              .roxo,
+                                                      size: 24.0,
+                                                    ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Padding(
+                                              padding: const EdgeInsetsDirectional
+                                                  .fromSTEB(6.0, 0.0, 6.0, 0.0),
+                                              child: Text(
+                                                valueOrDefault<String>(
+                                                  listViewTarefasRow.titulo,
+                                                  'N.A.',
+                                                ),
+                                                style:
+                                                    FlutterFlowTheme.of(context)
+                                                        .bodyMedium,
+                                              ),
+                                            ),
+                                          ),
+                                          InkWell(
+                                            splashColor: Colors.transparent,
+                                            focusColor: Colors.transparent,
+                                            hoverColor: Colors.transparent,
+                                            highlightColor: Colors.transparent,
+                                            onTap: () async {
+                                              await TarefasTable().delete(
+                                                matchingRows: (rows) => rows.eq(
+                                                  'id',
+                                                  listViewTarefasRow.id,
+                                                ),
+                                              );
+                                              setState(() => _model
+                                                  .requestCompleter = null);
+                                              await _model
+                                                  .waitForRequestCompleted();
+                                            },
+                                            child: FaIcon(
+                                              FontAwesomeIcons.trash,
+                                              color:
+                                                  FlutterFlowTheme.of(context)
+                                                      .roxo,
+                                              size: 24.0,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
                           ),
                         ),
                         FFButtonWidget(
@@ -147,11 +305,17 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                           : FocusScope.of(context).unfocus(),
                                   child: Padding(
                                     padding: MediaQuery.viewInsetsOf(context),
-                                    child: const CompNovaTarefaWidget(),
+                                    child: CompNovaTarefaWidget(
+                                      paramData:
+                                          _model.calendarSelectedDay!.start,
+                                    ),
                                   ),
                                 );
                               },
                             ).then((value) => safeSetState(() {}));
+
+                            setState(() => _model.requestCompleter = null);
+                            await _model.waitForRequestCompleted();
                           },
                           text: 'NOVA TAREFA',
                           options: FFButtonOptions(
